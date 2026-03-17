@@ -22,7 +22,7 @@
 #define I2C_READ	0x01
 #endif
 
-extern volatile uint8_t disp_mat[pixels_y][pixels_x/8];
+extern volatile uint8_t disp_mat[pixels_x/8][pixels_y];
 
 #ifdef _AVR_IO_H_
 
@@ -36,7 +36,7 @@ void print_disp_mat(void)
 		i2c_write(Next_Will_Be_Data);
 		for(i=0; i<pixels_y; i++)
 		{
-			i2c_write(disp_mat[i][k]);
+			i2c_write(disp_mat[k][i]);
 
 		}
 		i2c_stop();
@@ -143,7 +143,7 @@ void print_disp_mat(void)
 		go_to_col_page(0, k);
 		for(i=0; i<pixels_y; i++)
 		{
-			tmp[i+1]=disp_mat[i][k];
+			tmp[i+1]=disp_mat[k][i];
 		}
 		HAL_I2C_Master_Transmit(&hi2c2, (uint16_t)Disp_Addr, tmp, pixels_y+1, 1000);
 	}
@@ -266,7 +266,7 @@ void print_disp_mat(void)
 		}
 		for(i=0; i<pixels_y; i++)
 		{
-			LL_I2C_TransmitData8(I2C1, disp_mat[i][k]);
+			LL_I2C_TransmitData8(I2C1, disp_mat[k][i]);
 			while(LL_I2C_IsActiveFlag_TXE(I2C1) == 0)
 			{
 				asm("nop");
@@ -369,7 +369,7 @@ void print_disp_mat(void)
 			while(! LL_I2C_IsActiveFlag_BTF(I2C1))	{ __NOP();}
 			while(! LL_I2C_IsActiveFlag_TXE(I2C1))	{ __NOP();}
 
-			LL_I2C_TransmitData8(I2C1, disp_mat[l][k]);
+			LL_I2C_TransmitData8(I2C1, disp_mat[k][i]);
 		}
 
 		while(! LL_I2C_IsActiveFlag_BTF(I2C1))	{ __NOP();}
