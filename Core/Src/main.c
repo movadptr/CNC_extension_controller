@@ -44,10 +44,22 @@ I2C_HandleTypeDef hi2c2;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t us_delay_flag = 0;
+
+volatile uint8_t printing = 0;
+volatile uint8_t reprint = 0;
+
 extern volatile uint8_t spi2Buff[SPI2BUFFSIZE];
 
 extern constant uint8_t stpcat [682];
 extern volatile uint8_t spi2State;
+
+extern volatile uint8_t line1Buff[LINEBUFFSIZE];
+extern volatile uint8_t line2Buff[LINEBUFFSIZE];
+extern volatile uint8_t line3Buff[LINEBUFFSIZE];
+extern volatile uint8_t line4Buff[LINEBUFFSIZE];
+
+extern volatile uint8_t lineupdate;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,7 +127,45 @@ int main(void)
 
   while (1)
   {
-	  __NOP();
+	if((lineupdate != 0) || (reprint == 1))
+	{
+	  if(lineupdate&LINEUPDATE1MSK)
+	  {
+		fill_rectangle_x1y1_x2y2(0, 0, 8, 127, Pixel_off);
+		(void)write_text_H(0, 55, (char*)line1Buff, Pixel_on, size_5x8);
+		lineupdate &= (~LINEUPDATE1MSK);
+	  }
+
+	  if(lineupdate&LINEUPDATE2MSK)
+	  {
+		fill_rectangle_x1y1_x2y2(10, 0, 18, 127, Pixel_off);
+		(void)write_text_H(0, 45, (char*)line2Buff, Pixel_on, size_5x8);
+		lineupdate &= (~LINEUPDATE2MSK);
+	  }
+
+	  if(lineupdate&LINEUPDATE3MSK)
+	  {
+		fill_rectangle_x1y1_x2y2(20, 0, 28, 127, Pixel_off);
+		write_text_H(0, 35, (char*)line3Buff, Pixel_on, size_5x8);
+		lineupdate &= (~LINEUPDATE3MSK);
+	  }
+
+	  if(lineupdate&LINEUPDATE4MSK)
+	  {
+		fill_rectangle_x1y1_x2y2(10, 0, 18, 127, Pixel_off);
+		(void)write_text_H(0, 45, (char*)line2Buff, Pixel_on, size_5x8);
+		fill_rectangle_x1y1_x2y2(30, 0, 38, 127, Pixel_off);
+		(void)write_text_H(0, 25, (char*)line4Buff, Pixel_on, size_5x8);
+		lineupdate &= (~LINEUPDATE4MSK);
+	  }
+
+	  reprint = 0;
+	  printing = 1;
+	  print_disp_mat();
+	  printing = 0;
+
+	}
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

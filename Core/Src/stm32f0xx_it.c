@@ -45,10 +45,21 @@
 /* USER CODE BEGIN PV */
 extern volatile uint8_t us_delay_flag;
 
+extern volatile uint8_t printing;
+extern volatile uint8_t reprint;
+
 volatile uint8_t spi2State = SPI2_FREE;
 volatile uint8_t spi2Buff[SPI2BUFFSIZE] = {0};
 volatile uint8_t spi2BuffIndx = 0;
 volatile uint8_t firstMsg = 0;
+
+volatile uint8_t line1Buff[LINEBUFFSIZE] = {0};
+volatile uint8_t line2Buff[LINEBUFFSIZE] = {0};
+volatile uint8_t line3Buff[LINEBUFFSIZE] = {0};
+volatile uint8_t line4Buff[LINEBUFFSIZE] = {0};
+
+volatile uint8_t lineupdate = 0;
+
 
 /* USER CODE END PV */
 
@@ -186,52 +197,48 @@ void EXTI4_15_IRQHandler(void)
     		firstMsg=1;
     	}
 
+    	if(printing == 1)
+    	{
+    		reprint = 1;//if we update the buffers during screen refresh the content may be junk
+    	}
 
     	switch(rxcmd)
     	{
-    		case PrintFilenameTXT_cmd:	fill_rectangle_x1y1_x2y2(0, 0, 8, 127, Pixel_off);
-    									write_text_H(0, 55, (char*)&spi2Buff[2], Pixel_on, size_5x8);
-    									print_disp_mat();
+    		case PrintFilenameTXT_cmd:	strncpy(line1Buff, spi2Buff+2, LINEBUFFSIZE);
+    									line1Buff[LINEBUFFSIZE-1] = 0;//bab
+    									lineupdate |= LINEUPDATE1MSK;
     									break;
 
-    		case PrintCNCcmd_cmd:	fill_rectangle_x1y1_x2y2(10, 0, 18, 127, Pixel_off);
-    								write_text_H(0, 45, (char*)&spi2Buff[2], Pixel_on, size_5x8);
-    								print_disp_mat();
+    		case PrintCNCcmd_cmd:	strncpy(line2Buff, spi2Buff+2, LINEBUFFSIZE);
+									line2Buff[LINEBUFFSIZE-1] = 0;//bab
+									lineupdate |= LINEUPDATE2MSK;
     								break;
 
-    		case PrintInfo_cmd:		fill_rectangle_x1y1_x2y2(20, 0, 28, 127, Pixel_off);
-									write_text_H(0, 35, (char*)&spi2Buff[2], Pixel_on, size_5x8);
-									print_disp_mat();
+    		case PrintInfo_cmd:		strncpy(line3Buff, spi2Buff+2, LINEBUFFSIZE);
+    								line3Buff[LINEBUFFSIZE-1] = 0;//bab
+									lineupdate |= LINEUPDATE3MSK;
 									break;
 
     		case PrintCNCcmdAndLineNum_cmd:	char* splitpos = strchr((char*)&spi2Buff[2], '_');//search for the '_'character that is between the 2 strings to print
     										if(splitpos != NULL)
     										{
-    											char printcmdstr[SPI2BUFFSIZE] = {0};//too long, can contain much more text than we are able to print to the screen in one line, but it is fine
     											uint8_t str1len = (splitpos - (char*)&spi2Buff[2]);
-
-    											char linenumstr [SPI2BUFFSIZE] = {0};
     											uint8_t str2len = ( strlen((char*)&spi2Buff[2]) - (str1len+1));
-
-    											memcpy(printcmdstr, (char*)&spi2Buff[2], str1len);
-    											memcpy(linenumstr, (char*)&spi2Buff[2+str1len+1], str2len);
-
-    											fill_rectangle_x1y1_x2y2(10, 0, 18, 127, Pixel_off);
-												write_text_H(0, 45, printcmdstr, Pixel_on, size_5x8);
-
-												fill_rectangle_x1y1_x2y2(30, 0, 38, 127, Pixel_off);
-												write_text_H(0, 25, linenumstr, Pixel_on, size_5x8);
-
-												print_disp_mat();
+    											uint8_t str2start = (2+str1len+1);
+    											if(str1len > LINEBUFFSIZE) { str1len = LINEBUFFSIZE;}
+    											if(str2len > LINEBUFFSIZE) { str2len = LINEBUFFSIZE;}
+    											strncpy(line2Buff, (char*)&spi2Buff[2], str1len);
+    											strncpy(line4Buff, (char*)&spi2Buff[str2start], str2len);
+    											if(str1len<LINEBUFFSIZE)	{line2Buff[str1len] = 0;}
+    											else{ line2Buff[LINEBUFFSIZE-1] = 0;}
+    											if(str2len<LINEBUFFSIZE)	{line4Buff[str2len] = 0;}
+    											else{ line4Buff[LINEBUFFSIZE-1] = 0;}
+    											lineupdate |= (LINEUPDATE2MSK | LINEUPDATE4MSK);
     										}
-
 											break;
 
-    		default:
-					 break;
+    		default: break;
     	}
-
-
     	spi2BuffIndx = 0;
     	spi2State = SPI2_FREE;
     	LL_GPIO_ResetOutputPin(SPI2_EXT_CTR_BSY_GPIO_Port, SPI2_EXT_CTR_BSY_Pin);

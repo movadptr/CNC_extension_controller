@@ -101,6 +101,13 @@ void usDelay_noblock(uint32_t val);
 #define PrintInfo_cmd				0x03
 #define PrintCNCcmdAndLineNum_cmd	0x04
 
+#define LINEBUFFSIZE	65U
+
+#define LINEUPDATE1MSK	0x01
+#define LINEUPDATE2MSK	0x02
+#define LINEUPDATE3MSK	0x04
+#define LINEUPDATE4MSK	0x08
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
